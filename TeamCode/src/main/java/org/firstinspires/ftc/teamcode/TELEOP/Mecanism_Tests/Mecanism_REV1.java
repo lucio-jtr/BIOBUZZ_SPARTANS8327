@@ -41,7 +41,7 @@ public class Mecanism_REV1 {
         intake = hwMap.get(DcMotor.class, "Intake");
         intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        turret = hwMap.get(Servo.class, "turret");
+        //turret = hwMap.get(Servo.class, "turret");
     }
 
     //TL: ============== INTAKE ==============
@@ -49,7 +49,7 @@ public class Mecanism_REV1 {
         intake.setPower(pow);
     }
 
-    public void turret(double position) {
+    /*public void turret(double position) {
         turret.setPosition(position);
-    }
+    }*/
 }

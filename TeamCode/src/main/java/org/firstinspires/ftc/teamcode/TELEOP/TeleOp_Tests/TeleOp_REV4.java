@@ -1,5 +1,16 @@
 package org.firstinspires.ftc.teamcode.TELEOP.TeleOp_Tests;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCompatibilityManager;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.internal.usb.UsbConstants;
+import org.firstinspires.ftc.vision.VisionPortal;
+import org.firstinspires.ftc.vision.apriltag.AprilTagClusterDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+import org.firstinspires.ftc.vision.apriltag.AprilTagSingleDetection;
+import java.util.List;
+
 /*import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;*/
@@ -10,6 +21,7 @@ import com.pedropathing.math.Pose;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.TELEOP.Mecanism_Tests.Mecanism_REV1;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
@@ -27,6 +39,17 @@ import org.firstinspires.ftc.teamcode.pedro.Constants;
 //@Configurable
 @TeleOp(name = "TeleOp_Auto_Heading_REV4")
 public class TeleOp_REV4 extends OpMode {
+
+
+    private Servo servo_pos;
+    double incremento = 0.05;
+    double position = 0.5;
+
+    private static final boolean USE_WEBCAM = true;
+    private AprilTagProcessor aprilTag;
+    private VisionPortal visionPortal;
+
+
     Mecanism_REV1 mecanism = new Mecanism_REV1();
 
     private Follower follower;
@@ -74,8 +97,36 @@ public class TeleOp_REV4 extends OpMode {
 
     @Override
     public void init() {
+
+        //April Tag .  . . . . . . . . . . . . . . . .
+        aprilTag = new AprilTagProcessor.Builder().build();
+
+
+        VisionPortal.Builder builder = new VisionPortal.Builder();
+
+        if (USE_WEBCAM) {
+            builder.setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"));
+        } else {
+            builder.setCamera(BuiltinCameraDirection.BACK);
+        }
+
+
+        builder.addProcessor(aprilTag);
+        visionPortal = builder.build();
+
+
+
+        servo_pos = hardwareMap.get(Servo.class, "servo");
+        servo_pos.setPosition(0.5);
+
+        telemetry.addLine("Listo para detectar AprilTags y mostrar centro X/Y");
+        telemetry.update();
+
+
+
+
         mecanism.initAll(hardwareMap);
-        mecanism.turret(0.5);
+        //mecanism.turret(0.5);
 
         // Crear Follower
         follower = Constants.create(hardwareMap);
@@ -498,6 +549,14 @@ public class TeleOp_REV4 extends OpMode {
 
         follower.update();
         telemetry.update();
+
+
+        //Turret . . . . . . . . . . . . . . . . . . .
+
+
+
+
+
     }
 
 
