@@ -89,13 +89,13 @@ public class AprilTag_Camera_REV1 extends OpMode {
             double errorX = detection.ftcPose.bearing;
                 double ajuste = errorX * 0.000055;
 
-                if (detection.ftcPose.bearing > 2) {
-                    position = position - 0.0001;
+                if (detection.ftcPose.bearing > 5) {
+                    position = position + 0.0003;
                     servo_pos.setPosition(position);   //IZQUIERDA
                 }
 
-                if (detection.ftcPose.bearing < -2) {
-                    position = position + 0.0001;
+                if (detection.ftcPose.bearing < -5) {
+                    position = position - 0.0003;
                     servo_pos.setPosition(position);   //DERECHA
                 }
         //servo_pos.setPosition(position);
