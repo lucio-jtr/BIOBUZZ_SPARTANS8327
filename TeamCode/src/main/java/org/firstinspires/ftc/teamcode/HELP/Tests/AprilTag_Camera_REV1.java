@@ -49,7 +49,7 @@ public class AprilTag_Camera_REV1 extends OpMode {
 
 
         servo_pos = hardwareMap.get(Servo.class, "servo");
-        servo_pos.setPosition(0.5);
+        servo_pos.setPosition(0.39);
 
         telemetry.addLine("Listo para detectar AprilTags y mostrar centro X/Y");
         telemetry.update();

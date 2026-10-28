@@ -17,7 +17,7 @@ import com.qualcomm.robotcore.hardware.Servo;
  *  ("leftRear")  //3
  *  ("leftFront")    //1
  * Servos:
- *  ("turret") //0
+ *  ("servo") //0
  *
  * I2C:
  *  pinpoint = 2
