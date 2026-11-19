@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.HELP.Tests;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -16,6 +17,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.vision.apriltag.AprilTagSingleDetection;
 import java.util.List;
 
+@Disabled
 @TeleOp(name = "AprilTag_Camera_REV1")
 public class AprilTag_Camera_REV1 extends OpMode {
     private Servo servo_pos;

@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.HELP.Tests;
 
 import android.util.Size;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -17,6 +18,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagClusterDetection;
 
 import java.util.List;
 
+@Disabled
 @TeleOp(name = "AprilTag_Camera_REV2", group = "Tests")
 public class AprilTag_Camera_REV2 extends OpMode {
 

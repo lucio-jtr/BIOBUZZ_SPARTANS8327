@@ -1,129 +1,187 @@
 package org.firstinspires.ftc.teamcode.HELP.Tests;
 
+import android.util.Size;
 
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCompatibilityManager;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.internal.usb.UsbConstants;
 import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagClusterDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-import org.firstinspires.ftc.vision.apriltag.AprilTagSingleDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagClusterDetection;
+
 import java.util.List;
 
+@Disabled
 @TeleOp(name = "AprilTag_Camera_REV3")
 public class AprilTag_Camera_REV3 extends OpMode {
-    private Servo servo_pos;
-    double incremento = 0.05;
-    double position;
-    double x;
 
-    private static final boolean USE_WEBCAM = true;
+    private Servo servo_pos;
     private AprilTagProcessor aprilTag;
     private VisionPortal visionPortal;
 
+    private static final boolean USE_WEBCAM = true;
 
+    // Posicion inicial
+    double position = 0.50;
 
+    // Sensibilidad experimental
+    double sensitivity = 490.0;
+
+    // Controlador
+    double Kp = 0.18;
+    double deadband = 0.7;
+
+    // Limites
+    double minPosition = 0.44;
+    double maxPosition = 0.63;
+
+    // Seguridad de movimiento
+    double maxStep = 0.0003;
+    double updateInterval = 0.08;
+
+    double bearing = 0;
+    double filteredBearing = 0;
+
+    double lastUpdate = 0;
+
+    boolean firstDetection = true;
 
     @Override
     public void init() {
-        aprilTag = new AprilTagProcessor.Builder().build();
 
+        aprilTag = new AprilTagProcessor.Builder()
+                .setLensIntrinsics(
+                        1432.032, 1432.032,
+                        997.085, 535.891)
+                .build();
 
-        VisionPortal.Builder builder = new VisionPortal.Builder();
+        VisionPortal.Builder builder =
+                new VisionPortal.Builder()
+                        .setStreamFormat(VisionPortal.StreamFormat.YUY2)
+                        .setCameraResolution(new Size(1280, 800));
 
         if (USE_WEBCAM) {
-            builder.setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"));
+            builder.setCamera(
+                    hardwareMap.get(WebcamName.class, "Webcam 1"));
         } else {
             builder.setCamera(BuiltinCameraDirection.BACK);
         }
 
-
         builder.addProcessor(aprilTag);
+
         visionPortal = builder.build();
 
-
-
         servo_pos = hardwareMap.get(Servo.class, "servo");
-        servo_pos.setPosition(0.39);
 
-        telemetry.addLine("Listo para detectar AprilTags y mostrar centro X/Y");
-        telemetry.update();
+        position = 0.50;
+        servo_pos.setPosition(position);
     }
 
     @Override
     public void loop() {
 
-        if (gamepad1.dpad_down) {
-            servo_pos.setPosition(0.18);
+        List<AprilTagDetection> detections =
+                aprilTag.getDetections();
+
+        AprilTagDetection target = null;
+
+        // Buscar clúster
+        for (AprilTagDetection detection : detections) {
+
+            if (detection instanceof AprilTagClusterDetection
+                    && detection.ftcPose != null) {
+
+                target = detection;
+                break;
+            }
         }
 
-        if (gamepad1.dpad_right) {
-            servo_pos.setPosition(0.28);
-        }
+        // Buscar tag individual
+        if (target == null) {
 
-        if (gamepad1.dpad_up) {
-            servo_pos.setPosition(0.39);
-        }
+            for (AprilTagDetection detection : detections) {
 
-        if (gamepad1.dpad_left) {
-            servo_pos.setPosition(0.5);
-        }
-
-        List<AprilTagDetection> currentDetections = aprilTag.getDetections();
-        telemetry.addData("# AprilTags Detected", currentDetections.size());
-
-        // Step through the list of detections and display info for each one.
-        for (AprilTagDetection detection : currentDetections) {
-            if (detection instanceof AprilTagSingleDetection) {
-                AprilTagSingleDetection singleDet = (AprilTagSingleDetection) detection;
-
-                if (singleDet.metadata != null) {
-                    telemetry.addLine(String.format("\n==== (ID %d) %s", singleDet.id, singleDet.metadata.name));
-                    telemetry.addLine(String.format("XYZ %6.1f %6.1f %6.1f  (inch)", detection.ftcPose.x, detection.ftcPose.y, detection.ftcPose.z));
-                    telemetry.addLine(String.format("PRY %6.1f %6.1f %6.1f  (deg)", detection.ftcPose.pitch, detection.ftcPose.roll, detection.ftcPose.yaw));
-                    telemetry.addLine(String.format("RBE %6.1f %6.1f %6.1f  (inch, deg, deg)", detection.ftcPose.range, detection.ftcPose.bearing, detection.ftcPose.elevation));
-                } else {
-                    telemetry.addLine(String.format("\n==== (ID %d) Unknown", singleDet.id));
-                    telemetry.addLine(String.format("Center %6.0f %6.0f   (pixels)", singleDet.center.x, singleDet.center.y));
+                if (detection.ftcPose != null) {
+                    target = detection;
+                    break;
                 }
+            }
+        }
+
+        if (target != null) {
+
+            bearing = target.ftcPose.bearing;
+
+            // Filtrar pequeñas variaciones
+            if (firstDetection) {
+                filteredBearing = bearing;
+                firstDetection = false;
             } else {
-                AprilTagClusterDetection clusterDet = (AprilTagClusterDetection) detection;
-                telemetry.addLine(String.format("\n==== Tag Cluster (%s)", clusterDet.metadata.name));
-                telemetry.addLine(String.format("Percent tags found: %d", clusterDet.percentClusterFound));
-                telemetry.addLine(String.format("XYZ %6.1f %6.1f %6.1f  (inch)", detection.ftcPose.x, detection.ftcPose.y, detection.ftcPose.z));
-                telemetry.addLine(String.format("PRY %6.1f %6.1f %6.1f  (deg)", detection.ftcPose.pitch, detection.ftcPose.roll, detection.ftcPose.yaw));
-                telemetry.addLine(String.format("RBE %6.1f %6.1f %6.1f  (inch, deg, deg)", detection.ftcPose.range, detection.ftcPose.bearing, detection.ftcPose.elevation));
+                filteredBearing =
+                        0.7 * filteredBearing + 0.3 * bearing;
             }
 
+            // Actualizar solamente cada 100 ms
+            if (getRuntime() - lastUpdate >= updateInterval) {
 
-            double errorX = detection.ftcPose.bearing;
-            double ajuste = errorX * 0.000055;
+                lastUpdate = getRuntime();
 
-            if((detection.ftcPose.bearing >= -20 && detection.ftcPose.bearing <= -4) && (detection.ftcPose.bearing <= 20 && detection.ftcPose.bearing >= 4)){
-                x = 180 + detection.ftcPose.bearing;
+                if (Math.abs(filteredBearing) > deadband) {
 
-                position = ( x * 0.39 ) / 180;
+                    // Sensibilidad y correccion proporcional
+                    double correction =
+                            (filteredBearing / sensitivity) * Kp;
+
+                    // Limitar movimiento
+                    correction = Math.max(
+                            -maxStep,
+                            Math.min(maxStep, correction)
+                    );
+
+                    // Posicion aumenta cuando bearing disminuye
+                    position -= correction;
+
+                    // Limites del servo
+                    position = Math.max(
+                            minPosition,
+                            Math.min(maxPosition, position)
+                    );
+
+                    servo_pos.setPosition(position);
+                }
             }
 
-            servo_pos.setPosition(position);
+            telemetry.addData("ESTADO", "DETECTADO");
+            telemetry.addData("Bearing original", "%.2f", bearing);
+            telemetry.addData("Bearing filtrado", "%.2f",
+                    filteredBearing);
+            telemetry.addData("Position", "%.5f", position);
+            telemetry.addData("Servo", "%.5f",
+                    servo_pos.getPosition());
 
-        }   // end for() loop
+        } else {
 
-        // Add "key" information to telemetry
-        telemetry.addLine("\nkey:\nXYZ = X (Right), Y (Forward), Z (Up) dist.");
-        telemetry.addLine("PRY = Pitch, Roll & Yaw (XYZ Rotation)");
-        telemetry.addLine("RBE = Range, Bearing & Elevation");
-        telemetry.addData(" x =  ", x);
-        telemetry.addData("Position", servo_pos.getPosition());
+            // No mover el servo cuando se pierde el objetivo
+            firstDetection = true;
+
+            telemetry.addData("ESTADO", "TAG PERDIDO");
+            telemetry.addData("Position conservada", "%.5f",
+                    position);
+        }
+
         telemetry.update();
+    }
 
-    }   // end method telemetryAprilTag()
+    @Override
+    public void stop() {
 
-}   // end class
+        if (visionPortal != null) {
+            visionPortal.close();
+        }
+    }
+}
