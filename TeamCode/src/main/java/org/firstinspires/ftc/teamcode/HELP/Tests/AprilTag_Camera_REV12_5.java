@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.HELP.Tests;
 
 import android.util.Size;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -18,6 +19,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
 import java.util.List;
 import java.util.Locale;
 
+@Disabled
 @TeleOp(name = "AprilTag_Camera_REV12_5")
 public class AprilTag_Camera_REV12_5 extends OpMode {
 
